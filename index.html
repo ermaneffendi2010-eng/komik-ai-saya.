@@ -8,221 +8,287 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Bangers&display=swap');
         
-        body { font-family: 'Quicksand', sans-serif; background-color: #fef9c3; overflow-x: hidden; }
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f2f5; color: #1a202c; }
         .comic-font { font-family: 'Bangers', cursive; letter-spacing: 1px; }
-        .comic-frame { border: 6px solid #000; box-shadow: 10px 10px 0px #fbbf24; background: #fff; position: relative; }
-        .image-container { width: 100%; aspect-ratio: 1/1; background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         
-        .loading-spinner {
-            border: 4px solid #f3f4f6;
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .comic-border {
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0px #000;
+        }
+
+        .loader-spin {
+            border: 4px solid #f3f3f3;
             border-top: 4px solid #f97316;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 0.8s linear infinite;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .ai-loading-overlay {
-            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.98);
-            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
+        .image-viewport {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
         }
-        
-        #custom-alert {
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 200; background: #ef4444; color: white; padding: 1rem 2rem; border-radius: 1rem;
-            font-weight: bold; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .style-option { cursor: pointer; }
+        input[type="radio"]:checked + .style-card {
+            border-color: #f97316;
+            background-color: #fff7ed;
+            transform: scale(1.05);
+        }
+        .style-card {
+            border: 2px solid #f3f4f6;
+            transition: all 0.2s;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div id="custom-alert"></div>
-    <div class="max-w-xl mx-auto">
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl">
         
-        <!-- Layar Pengaturan -->
-        <div id="setup-screen" class="bg-white p-8 rounded-[2rem] border-8 border-yellow-400 shadow-2xl">
-            <h1 class="text-4xl font-bold text-orange-600 mb-1 text-center comic-font uppercase">Studio Komik Epik</h1>
-            <p class="text-center text-sm font-black text-gray-800 uppercase mb-6">Oleh: Erman Effendi</p>
-            
-            <div class="space-y-4">
-                <!-- Elemen input API Key telah dihapus sepenuhnya dari HTML -->
+        <!-- Screen 1: Form Input -->
+        <div id="setup-screen" class="glass-card rounded-[2.5rem] p-6 md:p-10">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl text-orange-500 comic-font mb-2 uppercase tracking-wide">Studio Komik Epik</h1>
+                <p class="text-gray-500 font-bold tracking-widest text-xs uppercase">Karya: Erman Effendi</p>
+                <div class="h-1 w-20 bg-orange-400 mx-auto mt-4 rounded-full"></div>
+            </header>
 
-                <div class="space-y-2">
-                    <label class="block font-bold text-gray-700 ml-1">Nama Karakter Kamu:</label>
-                    <input type="text" id="input-karakter" placeholder="Contoh: Si Berani Budi..." class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg focus:border-orange-400 transition-colors">
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">Siapa Nama Hero-mu?</label>
+                    <input type="text" id="char-name" placeholder="Misal: Si Kancil Cerdik" 
+                        class="w-full px-5 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-400 outline-none transition-all shadow-sm">
                 </div>
 
-                <div class="space-y-2">
-                    <label class="block font-bold text-gray-700 ml-1">Tema Petualangan:</label>
-                    <input type="text" id="input-tema" placeholder="Contoh: Mencari Harta di Hutan Sumatra..." class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg focus:border-orange-400 transition-colors">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">Apa Petualangannya?</label>
+                    <textarea id="story-theme" rows="2" placeholder="Misal: Mencari buah ajaib di hutan misterius..." 
+                        class="w-full px-5 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-400 outline-none transition-all shadow-sm resize-none"></textarea>
                 </div>
 
-                <button id="btn-generate" class="w-full mt-4 bg-orange-500 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-orange-600 text-2xl comic-font uppercase transition-all active:scale-95">
-                    BUAT KOMIK SEKARANG! 🚀
+                <!-- 10 Gaya Pilihan -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3 ml-1">Pilih Gaya Seni (10 Pilihan):</label>
+                    <div class="style-grid" id="style-container">
+                        <!-- Generating 10 styles via JS for cleanliness -->
+                    </div>
+                </div>
+
+                <button id="generate-trigger" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl text-xl comic-font transition-all transform active:scale-95 shadow-lg shadow-orange-200 uppercase">
+                    Mulai Buat Komik 🚀
                 </button>
             </div>
         </div>
 
-        <!-- Layar Loading AI -->
-        <div id="ai-loading" class="ai-loading-overlay hidden">
-            <div class="loading-spinner mb-4"></div>
-            <h2 id="ai-status-text" class="text-2xl font-bold text-orange-600 comic-font uppercase text-center">AI Sedang Merancang Plot...</h2>
-            <p id="ai-status-subtext" class="text-gray-600 font-bold text-center">Menyusun 15 adegan unik untukmu...</p>
-            <button id="retry-btn" class="mt-8 bg-orange-100 px-8 py-3 rounded-full font-bold text-orange-600 hidden border-2 border-orange-200">KEMBALI & COBA LAGI</button>
+        <!-- Screen 2: Loading Overlay -->
+        <div id="loading-screen" class="hidden fixed inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-6 text-center">
+            <div class="loader-spin mb-6 scale-150"></div>
+            <h2 id="loading-status" class="text-3xl font-bold text-orange-500 comic-font mb-2 uppercase">AI Sedang Berimajinasi...</h2>
+            <p class="text-gray-500 max-w-xs font-medium">Kami sedang menyusun 15 adegan epik untuk ceritamu. Mohon tunggu ya!</p>
         </div>
 
-        <!-- Layar Komik -->
-        <div id="story-screen" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-black text-white p-3 rounded-2xl">
-                <button id="prev-btn" class="font-bold px-4 text-sm hover:text-yellow-400">⬅️ BALIK</button>
+        <!-- Screen 3: Comic Viewer -->
+        <div id="viewer-screen" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-black text-white p-4 rounded-3xl comic-border">
+                <button id="prev-btn" class="p-2 hover:bg-white/20 rounded-full transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
                 <div class="text-center">
-                    <span id="pageIndicator" class="comic-font text-yellow-400 block">HALAMAN 1 / 15</span>
+                    <p id="page-num" class="comic-font text-xl text-orange-400">HALAMAN 1 / 15</p>
                 </div>
-                <button id="next-btn" class="font-bold px-4 text-sm hover:text-yellow-400">LANJUT ➡️</button>
+                <button id="next-btn" class="p-2 hover:bg-white/20 rounded-full transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
 
-            <div class="comic-frame rounded-[2.5rem] overflow-hidden">
-                <div class="image-container">
-                    <div id="loader" class="hidden absolute z-30 flex flex-col items-center bg-white/90 p-4 rounded-2xl border-2 border-orange-500 shadow-xl">
-                        <div class="loading-spinner mb-2"></div>
-                        <p class="text-xs font-bold text-orange-600">Lagi Gambar...</p>
+            <div class="bg-white rounded-[2.5rem] p-4 comic-border overflow-hidden">
+                <div class="image-viewport">
+                    <div id="img-loader" class="absolute inset-0 z-10 bg-gray-100 flex flex-col items-center justify-center">
+                        <div class="loader-spin mb-4"></div>
+                        <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">Menggambar Adegan...</p>
                     </div>
-                    <img id="comic-img" src="" class="w-full h-full object-cover transition-opacity duration-500">
+                    <img id="comic-image" src="" class="w-full h-full object-cover transition-opacity duration-700 opacity-0">
                 </div>
-                <div class="bg-white p-6 border-t-4 border-black text-center min-h-[140px] flex flex-col justify-center">
-                    <p id="narasi-box" class="text-lg font-bold text-gray-800 leading-snug"></p>
-                    <p id="dialog-box" class="text-orange-600 italic mt-2 font-bold text-base"></p>
+                
+                <div class="p-6 text-center space-y-4">
+                    <div class="bg-orange-50 p-4 rounded-2xl border-l-8 border-orange-500">
+                        <p id="narasi-text" class="text-lg font-bold text-gray-800 leading-relaxed"></p>
+                    </div>
+                    <p id="dialog-text" class="text-xl italic text-orange-600 font-bold comic-font"></p>
                 </div>
             </div>
-            
-            <button onclick="location.reload()" class="w-full text-gray-500 text-sm font-bold uppercase tracking-widest mt-4">Tutup & Buat Baru 🔄</button>
+
+            <button onclick="location.reload()" class="w-full py-4 text-gray-400 font-bold hover:text-orange-500 transition-colors uppercase text-sm tracking-widest">
+                Buat Cerita Baru 🔄
+            </button>
         </div>
+
     </div>
 
     <script>
-        // API Key terkunci di sini secara permanen dalam kode JavaScript
-        const CONFIG = {
-            API_KEY: "AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY",
-            TOTAL_PAGES: 15
+        const APP_CONFIG = {
+            KEY: "AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY",
+            PAGES: 15
         };
 
-        let currentPage = 1;
-        let dynamicPageData = [];
-        const imageCache = new Map();
+        const ART_STYLES = [
+            { id: "pixar", name: "Pixar 3D", emoji: "🎬", prompt: "Cute 3D Pixar Disney style animation" },
+            { id: "watercolor", name: "Cat Air", emoji: "🎨", prompt: "Hand-drawn watercolor illustration, soft colors" },
+            { id: "anime", name: "Anime", emoji: "🇯🇵", prompt: "Studio Ghibli style anime illustration" },
+            { id: "retro", name: "Retro", emoji: "📖", prompt: "Vintage retro 1990s comic book style" },
+            { id: "clay", name: "Lilin/Clay", emoji: "🧸", prompt: "Cute stop-motion claymation style" },
+            { id: "sketch", name: "Pensil", emoji: "✏️", prompt: "Detailed pencil sketch with light shading" },
+            { id: "cyber", name: "Cyberpunk", emoji: "🌆", prompt: "Neon glowing futuristic cyberpunk style" },
+            { id: "pixel", name: "Pixel Art", emoji: "👾", prompt: "16-bit retro video game pixel art" },
+            { id: "paper", name: "Potong Kertas", emoji: "✂️", prompt: "Papercut craft style illustration" },
+            { id: "lego", name: "Mainan Blok", emoji: "🧱", prompt: "Lego bricks style construction toy art" }
+        ];
 
-        function showAlert(msg) {
-            const alertBox = document.getElementById('custom-alert');
-            alertBox.innerText = msg;
-            alertBox.style.display = 'block';
-            setTimeout(() => alertBox.style.display = 'none', 5000);
-        }
+        let currentIdx = 0;
+        let storyData = [];
+        const cache = new Map();
 
-        async function generateStory() {
-            const loading = document.getElementById('ai-loading');
-            const statusT = document.getElementById('ai-status-text');
-            const statusS = document.getElementById('ai-status-subtext');
-            const retryB = document.getElementById('retry-btn');
+        // Render Style Options
+        const styleContainer = document.getElementById('style-container');
+        ART_STYLES.forEach((style, index) => {
+            const label = document.createElement('label');
+            label.className = "style-option";
+            label.innerHTML = `
+                <input type="radio" name="art-style" value="${style.prompt}" class="hidden" ${index === 0 ? 'checked' : ''}>
+                <div class="style-card p-3 rounded-xl bg-white text-center text-xs font-bold text-gray-600 h-full flex flex-col justify-center">
+                    <span class="text-xl mb-1">${style.emoji}</span>
+                    <span>${style.name}</span>
+                </div>
+            `;
+            styleContainer.appendChild(label);
+        });
+
+        async function generateFullStory() {
+            const char = document.getElementById('char-name').value || "Seorang Pahlawan";
+            const theme = document.getElementById('story-theme').value || "Petualangan seru";
             
-            loading.classList.remove('hidden');
-            retryB.classList.add('hidden');
-            statusT.innerText = "AI Sedang Merancang Plot...";
+            document.getElementById('loading-screen').classList.remove('hidden');
 
-            const char = document.getElementById('input-karakter').value;
-            const theme = document.getElementById('input-tema').value;
-
-            const prompt = `Buat cerita anak ${CONFIG.TOTAL_PAGES} halaman dalam Bahasa Indonesia. Karakter: ${char}, Tema: ${theme}. 
-            Kirimkan HANYA dalam format JSON array berisi ${CONFIG.TOTAL_PAGES} objek. 
-            Setiap objek wajib punya: {"prompt": "visual description in english for AI image generator", "narasi": "teks narasi indonesia", "dialog": "teks dialog indonesia"}. 
-            Tanpa teks tambahan.`;
+            const prompt = `Buat cerita anak bergambar 15 halaman. Karakter: ${char}. Tema: ${theme}. 
+            Hasil akhir HARUS berupa JSON array dengan 15 objek. 
+            Format: [{"visual": "english prompt", "indo": "narasi indonesia", "speech": "dialog karakter"}].`;
 
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${CONFIG.API_KEY}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${APP_CONFIG.KEY}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
 
-                if (!resp.ok) {
-                    const errData = await resp.json();
-                    throw new Error(errData.error?.message || "Terjadi kesalahan koneksi.");
-                }
-
-                const data = await resp.json();
-                let rawText = data.candidates[0].content.parts[0].text;
-                rawText = rawText.replace(/```json|```/g, "").trim();
-                dynamicPageData = JSON.parse(rawText);
-                
-                loading.classList.add('hidden');
+                const data = await response.json();
+                let cleanJson = data.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
+                storyData = JSON.parse(cleanJson);
                 return true;
-            } catch (e) {
-                statusT.innerText = "Waduh, Gagal!";
-                statusS.innerText = e.message;
-                retryB.classList.remove('hidden');
-                retryB.onclick = () => loading.classList.add('hidden');
+            } catch (err) {
+                alert("Waduh, koneksi ke otak AI terputus. Coba lagi ya!");
+                document.getElementById('loading-screen').classList.add('hidden');
                 return false;
             }
         }
 
-        async function fetchImage(promptText, pageIdx) {
-            if (imageCache.has(pageIdx)) return imageCache.get(pageIdx);
+        async function drawPage(idx) {
+            const page = storyData[idx];
+            const stylePrompt = document.querySelector('input[name="art-style"]:checked').value;
+            
+            document.getElementById('page-num').innerText = `HALAMAN ${idx + 1} / ${APP_CONFIG.PAGES}`;
+            document.getElementById('narasi-text').innerText = page.indo;
+            document.getElementById('dialog-text').innerText = page.speech ? `"${page.speech}"` : "";
+            
+            const imgElement = document.getElementById('comic-image');
+            const loader = document.getElementById('img-loader');
+            
+            imgElement.classList.add('opacity-0');
+            loader.classList.remove('hidden');
+
+            if (cache.has(idx)) {
+                imgElement.src = cache.get(idx);
+                imgElement.onload = () => {
+                    imgElement.classList.remove('opacity-0');
+                    loader.classList.add('hidden');
+                };
+                return;
+            }
+
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${CONFIG.API_KEY}`, {
+                const imgResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${APP_CONFIG.KEY}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        instances: { prompt: "Cute 3D Pixar style cartoon illustration, bright colors, " + promptText },
+                        instances: { prompt: `${stylePrompt}, ${page.visual}, bright colors, high quality, kid-friendly` },
                         parameters: { sampleCount: 1 }
                     })
                 });
-                if (!resp.ok) return null;
-                const result = await resp.json();
-                const b64 = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                imageCache.set(pageIdx, b64);
-                return b64;
-            } catch (e) { return null; }
-        }
 
-        async function loadPage(num) {
-            currentPage = num;
-            const item = dynamicPageData[num-1];
-            document.getElementById('narasi-box').innerText = item.narasi || "";
-            document.getElementById('dialog-box').innerText = item.dialog ? `"${item.dialog}"` : "";
-            document.getElementById('pageIndicator').innerText = `HALAMAN ${num} / ${CONFIG.TOTAL_PAGES}`;
-            
-            const imgEl = document.getElementById('comic-img');
-            const loader = document.getElementById('loader');
-            
-            if (imageCache.has(num)) {
-                imgEl.src = imageCache.get(num);
-                imgEl.style.opacity = "1";
-                loader.classList.add('hidden');
-            } else {
-                loader.classList.remove('hidden');
-                imgEl.style.opacity = "0.2";
-                const img = await fetchImage(item.prompt, num);
-                if (img && currentPage === num) {
-                    imgEl.src = img;
-                    imgEl.style.opacity = "1";
+                const res = await imgResp.json();
+                const b64 = `data:image/png;base64,${res.predictions[0].bytesBase64Encoded}`;
+                cache.set(idx, b64);
+                
+                imgElement.src = b64;
+                imgElement.onload = () => {
+                    imgElement.classList.remove('opacity-0');
                     loader.classList.add('hidden');
-                }
+                };
+            } catch (e) {
+                imgElement.src = "https://placehold.co/600x600?text=Gambar+Gagal+Dibuat";
+                imgElement.classList.remove('opacity-0');
+                loader.classList.add('hidden');
             }
         }
 
-        document.getElementById('btn-generate').onclick = async () => {
-            const char = document.getElementById('input-karakter').value.trim();
-            const theme = document.getElementById('input-tema').value.trim();
+        document.getElementById('generate-trigger').onclick = async () => {
+            const char = document.getElementById('char-name').value.trim();
+            const theme = document.getElementById('story-theme').value.trim();
+            if(!char || !theme) return alert("Isi nama pahlawan dan temanya dulu ya!");
 
-            if (!char || !theme) return showAlert("⚠️ Isi Nama Karakter dan Tema dulu!");
-
-            if (await generateStory()) {
+            if (await generateFullStory()) {
+                document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('setup-screen').classList.add('hidden');
-                document.getElementById('story-screen').classList.remove('hidden');
-                loadPage(1);
+                document.getElementById('viewer-screen').classList.remove('hidden');
+                drawPage(0);
             }
         };
 
-        document.getElementById('next-btn').onclick = () => { if(currentPage < CONFIG.TOTAL_PAGES) loadPage(currentPage + 1); };
-        document.getElementById('prev-btn').onclick = () => { if(currentPage > 1) loadPage(currentPage - 1); };
+        document.getElementById('next-btn').onclick = () => {
+            if (currentIdx < APP_CONFIG.PAGES - 1) {
+                currentIdx++;
+                drawPage(currentIdx);
+            }
+        };
+
+        document.getElementById('prev-btn').onclick = () => {
+            if (currentIdx > 0) {
+                currentIdx--;
+                drawPage(currentIdx);
+            }
+        };
     </script>
 </body>
 </html>
