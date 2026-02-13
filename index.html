@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CAFE CIRCLE 96 - POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f3f4f6; 
+            color: #1c1917; 
+            margin: 0; 
+            padding-bottom: 90px; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        /* HEADER */
+        .header-fixed {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #f3f4f6;
+            padding: 8px 12px;
+        }
+
+        .header-capsule {
+            background-color: #1a1a1a;
+            border-radius: 20px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 55px;
+        }
+
+        .brand-name { font-size: 0.85rem; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; line-height: 1; }
+        .brand-loc { font-size: 6px; color: #f97316; font-weight: 700; text-transform: uppercase; margin-top: 2px; letter-spacing: 0.5px; }
+
+        /* TOMBOL BAYAR */
+        .btn-bayar-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f97316;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 9px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+            border: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+        .btn-bayar-center.active { opacity: 1; pointer-events: auto; }
+
+        .omzet-val { font-size: 14px; font-weight: 800; color: #f97316; text-align: right; }
+        .omzet-label { font-size: 6px; color: #6b7280; text-transform: uppercase; text-align: right; }
+
+        /* MENU GRID */
+        .menu-grid-container {
+            padding: 5px 12px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 6px;
+        }
+
+        .menu-card {
+            background-color: #373737;
+            border-radius: 12px;
+            padding: 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.02);
+            aspect-ratio: 1 / 1; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .menu-card:active { transform: scale(0.9); background-color: #222; }
+
+        .menu-icon-mini { color: #f97316; font-size: 0.7rem; margin-bottom: 4px; opacity: 0.6; }
+        .menu-name { font-size: 7.5px; font-weight: 700; color: #ffffff; text-transform: uppercase; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .menu-price { font-size: 9px; font-weight: 800; color: #f97316; }
+
+        /* NAV BAR */
+        .nav-bar {
+            position: fixed;
+            bottom: 12px;
+            left: 15px;
+            right: 15px;
+            background-color: #1a1a1a;
+            height: 55px;
+            border-radius: 18px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #52525b; font-size: 7px; font-weight: 800; transition: 0.2s; }
+        .nav-btn.active { color: #f97316; }
+        .nav-btn i { font-size: 1rem; margin-bottom: 2px; }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 26, 0.9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: 700;
+            z-index: 2000;
+            display: none;
+        }
+
+        /* ANTREAN KASIR & EDIT MODAL */
+        .cart-list {
+            margin: 10px 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed #f1f1f1;
+        }
+
+        /* MODAL OVERLAY */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 24px;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast"></div>
+
+    <!-- Modal Edit Transaksi (Hapus Per Item) -->
+    <div id="modalEdit" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-[10px] font-black uppercase text-stone-800">Edit Item Transaksi</h3>
+                <button onclick="tutupModal()" class="text-stone-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="modalItemList" class="space-y-2"></div>
+            <p class="text-[7px] text-stone-400 mt-4 text-center italic uppercase">Klik ikon merah untuk menghapus 1 item yang salah input</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header-fixed">
+        <div class="header-capsule">
+            <div>
+                <h1 class="brand-name">CAFE CIRCLE 96</h1>
+                <p class="brand-loc">SIMPANG BALAI GAJAH</p>
+            </div>
+            
+            <button id="btnBayar" onclick="checkout()" class="btn-bayar-center">PROSES</button>
+
+            <div>
+                <p id="totalOmzet" class="omzet-val">0</p>
+                <p class="omzet-label">Sales Today</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Kasir -->
+    <div id="tab-kasir" class="tab-page">
+        <div class="px-4 py-1 flex justify-between items-center">
+            <span class="text-[8px] font-black text-stone-400 uppercase">Katalog</span>
+            <span id="cartCountBadge" class="text-[8px] font-black text-orange-600 uppercase">0 item dipilih</span>
+        </div>
+        <div id="menuGrid" class="menu-grid-container"></div>
+        
+        <!-- List Antrean Sebelum Bayar -->
+        <div id="previewCart" class="cart-list hidden">
+            <p class="text-[7px] font-black text-stone-300 uppercase mb-2">Antrean Klik (Hapus jika salah):</p>
+            <div id="cartItems"></div>
+        </div>
+    </div>
+
+    <!-- Tab Laporan -->
+    <div id="tab-laporan" class="tab-page hidden p-4">
+        <div class="bg-white p-3 rounded-xl mb-3 shadow-sm">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="date" id="tglMulai" class="bg-stone-50 p-2 rounded-lg text-[9px] font-bold border-none outline-none" onchange="loadLaporan()">
+                <input type="date" id="tglSelesai" class="bg-stone-50 p-2 rounded-lg text-[9px] font-bold border-none outline-none" onchange="loadLaporan()">
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-stone-50">
+                <span class="text-[7px] font-black text-stone-400 uppercase">Total Terpilih:</span>
+                <span id="omzetPeriode" class="text-[11px] font-black text-orange-600">Rp 0</span>
+            </div>
+        </div>
+        <div id="listLaporan" class="space-y-2"></div>
+    </div>
+
+    <!-- Tab Pengaturan -->
+    <div id="tab-edit" class="tab-page hidden p-4">
+        <div class="bg-white rounded-xl p-4 mb-4 shadow-sm space-y-2">
+            <input type="text" id="inNama" placeholder="NAMA MENU..." class="w-full bg-stone-50 p-2 rounded-lg text-[10px] font-bold outline-none border border-stone-100">
+            <input type="number" id="inHarga" placeholder="HARGA..." class="w-full bg-stone-50 p-2 rounded-lg text-[10px] font-bold outline-none border border-stone-100">
+            <button onclick="simpanMenu()" class="w-full bg-orange-500 text-white p-2 rounded-lg font-black text-[9px] uppercase">Tambah Menu</button>
+        </div>
+        <div id="adminMenu" class="space-y-1"></div>
+    </div>
+
+    <!-- Navigasi -->
+    <div class="nav-bar">
+        <div onclick="gantiTab('kasir')" id="nav-kasir" class="nav-btn active">
+            <i class="fa-solid fa-table-cells-large"></i>KASIR
+        </div>
+        <div onclick="gantiTab('laporan')" id="nav-laporan" class="nav-btn">
+            <i class="fa-solid fa-list-ul"></i>LAPORAN
+        </div>
+        <div onclick="gantiTab('edit')" id="nav-edit" class="nav-btn">
+            <i class="fa-solid fa-sliders"></i>PENGATURAN
+        </div>
+    </div>
+
+    <script>
+        let dbMenu = JSON.parse(localStorage.getItem('c96_menu_final')) || [
+            { id: 1, nama: 'ESPRESSO', harga: 12000 },
+            { id: 2, nama: 'LATTE', harga: 20000 },
+            { id: 3, nama: 'AMERCN', harga: 15000 },
+            { id: 4, nama: 'CAPUCNO', harga: 22000 }
+        ];
+
+        let dbSales = JSON.parse(localStorage.getItem('c96_sales_final')) || [];
+        let keranjang = [];
+
+        function formatDuit(n) { return n >= 1000 ? (n/1000) + 'K' : n; }
+        
+        function notify(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 800);
+        }
+
+        function refreshUI() {
+            const today = new Date().toLocaleDateString('en-CA');
+            const total = dbSales.filter(s => s.tgl === today).reduce((a, b) => a + b.total, 0);
+            document.getElementById('totalOmzet').innerText = total.toLocaleString('id-ID');
+
+            const btn = document.getElementById('btnBayar');
+            const badge = document.getElementById('cartCountBadge');
+            const preview = document.getElementById('previewCart');
+            const cartItemsDiv = document.getElementById('cartItems');
+            
+            if (keranjang.length > 0) {
+                btn.classList.add('active');
+                btn.innerText = `PROSES (${keranjang.length})`;
+                badge.innerText = `${keranjang.length} ITEM DIPILIH`;
+                preview.classList.remove('hidden');
+                
+                cartItemsDiv.innerHTML = keranjang.map((item, idx) => `
+                    <div class="cart-item">
+                        <span class="text-[9px] font-bold text-stone-700">${item.nama}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[8px] font-black text-orange-500">${item.harga.toLocaleString()}</span>
+                            <button onclick="hapusAntrean(${idx})" class="text-red-400 text-[10px]"><i class="fa-solid fa-circle-minus"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                btn.classList.remove('active');
+                badge.innerText = `0 ITEM DIPILIH`;
+                preview.classList.add('hidden');
+            }
+        }
+
+        function renderKasir() {
+            const grid = document.getElementById('menuGrid');
+            grid.innerHTML = dbMenu.map(m => `
+                <div class="menu-card" onclick="pilihMenu('${m.nama}', ${m.harga})">
+                    <i class="fa-solid fa-mug-hot menu-icon-mini"></i>
+                    <p class="menu-name">${m.nama}</p>
+                    <p class="menu-price">${formatDuit(m.harga)}</p>
+                </div>
+            `).join('');
+        }
+
+        function pilihMenu(n, h) {
+            keranjang.push({ nama: n, harga: h });
+            refreshUI();
+        }
+
+        function hapusAntrean(idx) {
+            keranjang.splice(idx, 1);
+            refreshUI();
+            notify("ITEM DIHAPUS");
+        }
+
+        function checkout() {
+            if (keranjang.length === 0) return;
+            const total = keranjang.reduce((a, b) => a + b.harga, 0);
+            const now = new Date();
+            const tgl = now.toLocaleDateString('en-CA');
+            const jam = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+            
+            // Simpan sebagai array object agar bisa dihapus per item nanti
+            const itemsData = [...keranjang];
+
+            dbSales.push({ 
+                id: Date.now().toString(), 
+                kode: '#' + Math.floor(1000 + Math.random() * 9000), 
+                tgl, jam, total, 
+                items: itemsData 
+            });
+            
+            localStorage.setItem('c96_sales_final', JSON.stringify(dbSales));
+            keranjang = [];
+            refreshUI();
+            notify("BERHASIL!");
+        }
+
+        function gantiTab(t) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + t).classList.remove('hidden');
+            document.getElementById('nav-' + t).classList.add('active');
+            if(t === 'kasir') renderKasir();
+            if(t === 'laporan') loadLaporan();
+            if(t === 'edit') renderEdit();
+        }
+
+        function loadLaporan() {
+            const list = document.getElementById('listLaporan');
+            const tglA = document.getElementById('tglMulai').value;
+            const tglB = document.getElementById('tglSelesai').value;
+            
+            let data = dbSales;
+            if(tglA && tglB) data = dbSales.filter(s => s.tgl >= tglA && s.tgl <= tglB);
+
+            document.getElementById('omzetPeriode').innerText = 'Rp ' + data.reduce((a,b) => a+b.total, 0).toLocaleString('id-ID');
+
+            if (data.length === 0) {
+                list.innerHTML = `<p class="text-center text-[9px] text-stone-400 mt-10 font-bold uppercase">Tidak Ada Transaksi</p>`;
+                return;
+            }
+
+            list.innerHTML = data.slice().reverse().map(s => {
+                const ringkasan = s.items.map(i => i.nama).join(', ');
+                return `
+                <div class="bg-white p-3 rounded-xl border border-stone-50 flex justify-between items-center shadow-sm">
+                    <div class="flex-1 pr-4">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[8px] font-black text-stone-800">${s.kode} <span class="text-stone-300 ml-1 font-bold">${s.jam}</span></span>
+                            <span class="text-[9px] font-black text-orange-600">Rp ${s.total.toLocaleString()}</span>
+                        </div>
+                        <p class="text-[7px] text-stone-400 font-bold truncate uppercase">${ringkasan}</p>
+                    </div>
+                    <button onclick="bukaEditLaporan('${s.id}')" class="bg-blue-50 text-blue-400 h-8 w-8 rounded-lg flex items-center justify-center text-[10px]">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                </div>
+            `}).join('');
+        }
+
+        // FUNGSI BARU: HAPUS PER ITEM DI LAPORAN
+        function bukaEditLaporan(targetId) {
+            const sale = dbSales.find(s => s.id === targetId);
+            if(!sale) return;
+
+            const modal = document.getElementById('modalEdit');
+            const list = document.getElementById('modalItemList');
+            
+            modal.style.display = 'flex';
+            
+            list.innerHTML = sale.items.map((item, idx) => `
+                <div class="flex justify-between items-center bg-stone-50 p-3 rounded-xl">
+                    <div>
+                        <p class="text-[9px] font-black text-stone-800 uppercase">${item.nama}</p>
+                        <p class="text-[8px] font-bold text-orange-500">Rp ${item.harga.toLocaleString()}</p>
+                    </div>
+                    <button onclick="eksekusiHapusItem('${targetId}', ${idx})" class="text-red-500 bg-red-50 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-minus text-[10px]"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function eksekusiHapusItem(saleId, itemIdx) {
+            const saleIndex = dbSales.findIndex(s => s.id === saleId);
+            if (saleIndex === -1) return;
+
+            const sale = dbSales[saleIndex];
+            
+            // Jika item tinggal satu, hapus seluruh nota
+            if (sale.items.length <= 1) {
+                if(confirm("Ini item terakhir, hapus seluruh nota?")) {
+                    dbSales.splice(saleIndex, 1);
+                    tutupModal();
+                } else {
+                    return;
+                }
+            } else {
+                // Hapus hanya satu item
+                sale.items.splice(itemIdx, 1);
+                // Update total harga nota tersebut
+                sale.total = sale.items.reduce((a, b) => a + b.harga, 0);
+                // Refresh tampilan modal
+                bukaEditLaporan(saleId);
+            }
+
+            localStorage.setItem('c96_sales_final', JSON.stringify(dbSales));
+            loadLaporan();
+            refreshUI();
+            notify("ITEM BERHASIL DIHAPUS");
+        }
+
+        function tutupModal() {
+            document.getElementById('modalEdit').style.display = 'none';
+        }
+
+        function renderEdit() {
+            const list = document.getElementById('adminMenu');
+            list.innerHTML = dbMenu.map(m => `
+                <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-stone-50">
+                    <div><p class="text-[9px] font-black">${m.nama}</p><p class="text-[8px] font-bold text-orange-500">${m.harga.toLocaleString()}</p></div>
+                    <button onclick="hapusMenu(${m.id})" class="text-stone-300 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function simpanMenu() {
+            const n = document.getElementById('inNama').value;
+            const h = document.getElementById('inHarga').value;
+            if(!n || !h) return;
+            dbMenu.push({ id: Date.now(), nama: n.toUpperCase(), harga: parseInt(h) });
+            localStorage.setItem('c96_menu_final', JSON.stringify(dbMenu));
+            document.getElementById('inNama').value = '';
+            document.getElementById('inHarga').value = '';
+            renderEdit();
+            notify("TAMBAH BERHASIL");
+        }
+
+        function hapusMenu(id) {
+            dbMenu = dbMenu.filter(m => m.id !== id);
+            localStorage.setItem('c96_menu_final', JSON.stringify(dbMenu));
+            renderEdit();
+        }
+
+        window.onload = () => {
+            const today = new Date().toLocaleDateString('en-CA');
+            document.getElementById('tglMulai').value = today;
+            document.getElementById('tglSelesai').value = today;
+            renderKasir();
+            refreshUI();
+        };
+    </script>
+</body>
+</html>
