@@ -149,22 +149,23 @@
     </div>
 
     <script>
+        // API Configuration - Set to empty, runtime provides it
+        const apiKey = "";
         const APP_CONFIG = {
-            KEY: "", // Empty as requested, runtime provides the key
             PAGES: 15
         };
 
         const ART_STYLES = [
-            { id: "pixar", name: "Pixar 3D", emoji: "🎬", prompt: "Cute 3D Pixar Disney style animation" },
-            { id: "watercolor", name: "Cat Air", emoji: "🎨", prompt: "Hand-drawn watercolor illustration, soft colors" },
-            { id: "anime", name: "Anime", emoji: "🇯🇵", prompt: "Studio Ghibli style anime illustration" },
-            { id: "retro", name: "Retro", emoji: "📖", prompt: "Vintage retro 1990s comic book style" },
-            { id: "clay", name: "Lilin/Clay", emoji: "🧸", prompt: "Cute stop-motion claymation style" },
-            { id: "sketch", name: "Pensil", emoji: "✏️", prompt: "Detailed pencil sketch with light shading" },
-            { id: "cyber", name: "Cyberpunk", emoji: "🌆", prompt: "Neon glowing futuristic cyberpunk style" },
-            { id: "pixel", name: "Pixel Art", emoji: "👾", prompt: "16-bit retro video game pixel art" },
-            { id: "paper", name: "Potong Kertas", emoji: "✂️", prompt: "Papercut craft style illustration" },
-            { id: "lego", name: "Mainan Blok", emoji: "🧱", prompt: "Lego bricks style construction toy art" }
+            { id: "pixar", name: "Pixar 3D", emoji: "🎬", prompt: "Cute 3D Pixar Disney style animation, bright lighting, high detail" },
+            { id: "watercolor", name: "Cat Air", emoji: "🎨", prompt: "Hand-drawn watercolor illustration, soft pastel colors, storybook style" },
+            { id: "anime", name: "Anime", emoji: "🇯🇵", prompt: "Studio Ghibli style anime illustration, lush environments, expressive characters" },
+            { id: "retro", name: "Retro", emoji: "📖", prompt: "Vintage retro 1990s comic book style, halftone dots, vibrant colors" },
+            { id: "clay", name: "Lilin/Clay", emoji: "🧸", prompt: "Cute stop-motion claymation style, handcrafted look" },
+            { id: "sketch", name: "Pensil", emoji: "✏️", prompt: "Detailed pencil sketch with soft colored shading, artistic" },
+            { id: "cyber", name: "Cyberpunk", emoji: "🌆", prompt: "Neon glowing futuristic cyberpunk style, digital art" },
+            { id: "pixel", name: "Pixel Art", emoji: "👾", prompt: "16-bit retro video game pixel art, isometric perspective" },
+            { id: "paper", name: "Potong Kertas", emoji: "✂️", prompt: "Papercut craft style illustration, layered depth" },
+            { id: "lego", name: "Mainan Blok", emoji: "🧱", prompt: "Lego bricks style construction toy art, vibrant plastic look" }
         ];
 
         let currentIdx = 0;
@@ -186,11 +187,14 @@
             styleContainer.appendChild(label);
         });
 
-        // Exponential backoff fetch helper
+        // Robust Fetch Helper with Exponential Backoff
         async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
             try {
                 const response = await fetch(url, options);
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({}));
+                    throw new Error(`HTTP ${response.status}: ${errorBody.error?.message || 'Unknown error'}`);
+                }
                 return await response.json();
             } catch (err) {
                 if (retries > 0) {
@@ -207,21 +211,27 @@
             
             document.getElementById('loading-screen').classList.remove('hidden');
 
-            const prompt = `Buat cerita anak bergambar 15 halaman. Karakter: ${char}. Tema: ${theme}. 
-            Hasil akhir HARUS berupa JSON array dengan 15 objek. 
-            Format: [{"visual": "english prompt", "indo": "narasi indonesia", "speech": "dialog karakter"}].`;
+            const systemPrompt = "Anda adalah penulis buku cerita anak profesional. Buatlah cerita petualangan yang mendidik dan seru.";
+            const userQuery = `Buat cerita anak bergambar 15 halaman. Karakter: ${char}. Tema: ${theme}. 
+            Hasil akhir HARUS berupa JSON array dengan tepat 15 objek. 
+            Format: [{"visual": "english prompt for image generation", "indo": "narasi cerita dalam bahasa indonesia", "speech": "dialog karakter singkat"}].`;
 
             try {
-                const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${APP_CONFIG.KEY}`, {
+                const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
                 });
 
-                let cleanJson = data.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
-                storyData = JSON.parse(cleanJson);
+                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                storyData = JSON.parse(textResponse);
                 return true;
             } catch (err) {
+                console.error("Story Gen Error:", err);
                 alert("Waduh, koneksi ke otak AI terputus. Coba lagi ya!");
                 document.getElementById('loading-screen').classList.add('hidden');
                 return false;
@@ -254,28 +264,32 @@
             }
 
             try {
-                const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${APP_CONFIG.KEY}`, {
+                // Using imagen-4.0-generate-001 with direct predict endpoint
+                const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        instances: { prompt: `${stylePrompt}, ${page.visual}, bright colors, high quality, kid-friendly` },
+                        instances: [{ prompt: `${stylePrompt}, ${page.visual}, high resolution, bright colors, kid-friendly, cinematic composition` }],
                         parameters: { sampleCount: 1 }
                     })
                 });
 
-                const b64 = `data:image/png;base64,${res.predictions[0].bytesBase64Encoded}`;
-                cache.set(idx, b64);
-                
-                imgElement.src = b64;
-                imgElement.onload = () => {
-                    imgElement.classList.remove('opacity-0');
-                    loader.classList.add('hidden');
-                };
+                if (res.predictions && res.predictions[0]?.bytesBase64Encoded) {
+                    const b64 = `data:image/png;base64,${res.predictions[0].bytesBase64Encoded}`;
+                    cache.set(idx, b64);
+                    imgElement.src = b64;
+                    imgElement.onload = () => {
+                        imgElement.classList.remove('opacity-0');
+                        loader.classList.add('hidden');
+                    };
+                } else {
+                    throw new Error("Format respons gambar tidak valid");
+                }
             } catch (e) {
-                loaderText.innerText = "Gagal memuat gambar. Klik Lanjut lalu Balik lagi.";
-                imgElement.src = "https://placehold.co/600x600?text=Gambar+Gagal+Dibuat";
+                console.error("Image Gen Error:", e);
+                loaderText.innerText = "Gagal menggambar. Coba klik 'Lanjut' lalu kembali lagi ke sini.";
+                imgElement.src = "https://placehold.co/600x600?text=Gambar+Sibuk+Dibuat";
                 imgElement.classList.remove('opacity-0');
-                // Don't hide loader text so error is visible if persistent
             }
         }
 
