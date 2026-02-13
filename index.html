@@ -47,13 +47,15 @@
             <div class="space-y-4">
                 <div class="bg-orange-50 p-4 rounded-2xl border-2 border-orange-200">
                     <label class="block text-orange-800 font-bold mb-1 text-sm">🔑 Masukkan API Key Gemini:</label>
-                    <input type="password" id="api-key-input" placeholder="AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY" class="w-full p-3 rounded-xl border-2 border-orange-200 outline-none focus:border-orange-500">
+                    <!-- Perbaikan: Menggunakan 'value' agar key langsung terbaca sistem -->
+                    <input type="password" id="api-key-input" value="AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY" class="w-full p-3 rounded-xl border-2 border-orange-200 outline-none focus:border-orange-500 text-gray-800">
+                    <p class="text-[10px] text-orange-400 mt-1 italic">*Key sudah terpasang otomatis di kode.</p>
                 </div>
 
                 <input type="text" id="input-karakter" placeholder="Nama Karakter (Misal: Si Kancil)" class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg">
                 <input type="text" id="input-tema" placeholder="Tema Cerita (Misal: Belajar Berbagi)" class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg">
 
-                <button id="btn-generate" class="w-full bg-orange-500 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-orange-600 text-2xl comic-font uppercase transition-all">
+                <button id="btn-generate" class="w-full bg-orange-500 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-orange-600 text-2xl comic-font uppercase transition-all active:scale-95">
                     BUAT KOMIK SEKARANG! 🚀
                 </button>
             </div>
@@ -62,9 +64,9 @@
         <!-- Layar Loading AI -->
         <div id="ai-loading" class="ai-loading-overlay hidden">
             <div class="loading-spinner mb-4"></div>
-            <h2 id="ai-status-text" class="text-2xl font-bold text-orange-600 comic-font uppercase">AI Sedang Merancang Plot...</h2>
-            <p id="ai-status-subtext" class="text-gray-600 font-bold">Lagi nulis cerita 15 halaman buat kamu...</p>
-            <button id="retry-btn" class="mt-8 bg-gray-200 px-6 py-2 rounded-full font-bold text-gray-700 hidden">BATAL & COBA LAGI</button>
+            <h2 id="ai-status-text" class="text-2xl font-bold text-orange-600 comic-font uppercase text-center">AI Sedang Merancang Plot...</h2>
+            <p id="ai-status-subtext" class="text-gray-600 font-bold text-center">Menyusun 15 adegan unik untukmu...</p>
+            <button id="retry-btn" class="mt-8 bg-orange-100 px-8 py-3 rounded-full font-bold text-orange-600 hidden border-2 border-orange-200">KEMBALI & PERBAIKI</button>
         </div>
 
         <!-- Layar Komik -->
@@ -119,10 +121,10 @@
             const char = document.getElementById('input-karakter').value;
             const theme = document.getElementById('input-tema').value;
 
-            const prompt = `Buat cerita anak 15 halaman. Karakter: ${char}, Tema: ${theme}. 
+            const prompt = `Buat cerita anak 15 halaman dalam Bahasa Indonesia. Karakter: ${char}, Tema: ${theme}. 
             Kirimkan HANYA dalam format JSON array berisi 15 objek. 
-            Setiap objek: {"prompt": "visual description in english", "narasi": "teks narasi indonesia", "dialog": "teks dialog indonesia"}. 
-            Tanpa teks penjelasan lain.`;
+            Setiap objek wajib punya: {"prompt": "visual description in english for AI image generator", "narasi": "teks narasi indonesia", "dialog": "teks dialog indonesia"}. 
+            Tanpa teks tambahan.`;
 
             try {
                 const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
@@ -131,7 +133,10 @@
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
 
-                if (!resp.ok) throw new Error("API Key salah atau tidak aktif.");
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.error?.message || "Cek kuota atau kunci API.");
+                }
 
                 const data = await resp.json();
                 let rawText = data.candidates[0].content.parts[0].text;
@@ -142,7 +147,7 @@
                 return true;
             } catch (e) {
                 statusT.innerText = "Waduh, Gagal!";
-                statusS.innerText = "Ada masalah koneksi atau API Key salah. Coba periksa lagi kuncinya.";
+                statusS.innerText = e.message;
                 retryB.classList.remove('hidden');
                 retryB.onclick = () => loading.classList.add('hidden');
                 return false;
@@ -156,10 +161,11 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        instances: { prompt: "Vibrant 3D Pixar style illustration for children book, high resolution, " + promptText },
+                        instances: { prompt: "Cute 3D Pixar style cartoon illustration, bright colors, " + promptText },
                         parameters: { sampleCount: 1 }
                     })
                 });
+                if (!resp.ok) return null;
                 const result = await resp.json();
                 const b64 = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
                 imageCache.set(pageIdx, b64);
@@ -170,7 +176,7 @@
         async function loadPage(num) {
             currentPage = num;
             const item = dynamicPageData[num-1];
-            document.getElementById('narasi-box').innerText = item.narasi;
+            document.getElementById('narasi-box').innerText = item.narasi || "";
             document.getElementById('dialog-box').innerText = item.dialog ? `"${item.dialog}"` : "";
             document.getElementById('pageIndicator').innerText = `HALAMAN ${num} / 15`;
             
@@ -198,8 +204,8 @@
             const char = document.getElementById('input-karakter').value.trim();
             const theme = document.getElementById('input-tema').value.trim();
 
-            if (!currentApiKey) return showAlert("⚠️ Tempelkan API Key Gemini Anda lebih dulu!");
-            if (!char || !theme) return showAlert("⚠️ Isi Nama Karakter dan Tema dulu ya!");
+            if (!currentApiKey) return showAlert("⚠️ API Key tidak terbaca!");
+            if (!char || !theme) return showAlert("⚠️ Isi Nama Karakter dan Tema dulu!");
 
             if (await generateStory()) {
                 document.getElementById('setup-screen').classList.add('hidden');
