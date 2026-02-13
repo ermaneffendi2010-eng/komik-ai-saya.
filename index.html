@@ -45,10 +45,7 @@
             <p class="text-center text-sm font-black text-gray-800 uppercase mb-6">Oleh: Erman Effendi</p>
             
             <div class="space-y-4">
-                <!-- Bagian API Key sekarang disembunyikan sepenuhnya dari pandangan user -->
-                <div class="hidden">
-                    <input type="password" id="api-key-input" value="AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY">
-                </div>
+                <!-- Elemen input API Key telah dihapus sepenuhnya dari HTML -->
 
                 <div class="space-y-2">
                     <label class="block font-bold text-gray-700 ml-1">Nama Karakter Kamu:</label>
@@ -71,7 +68,7 @@
             <div class="loading-spinner mb-4"></div>
             <h2 id="ai-status-text" class="text-2xl font-bold text-orange-600 comic-font uppercase text-center">AI Sedang Merancang Plot...</h2>
             <p id="ai-status-subtext" class="text-gray-600 font-bold text-center">Menyusun 15 adegan unik untukmu...</p>
-            <button id="retry-btn" class="mt-8 bg-orange-100 px-8 py-3 rounded-full font-bold text-orange-600 hidden border-2 border-orange-200">KEMBALI & PERBAIKI</button>
+            <button id="retry-btn" class="mt-8 bg-orange-100 px-8 py-3 rounded-full font-bold text-orange-600 hidden border-2 border-orange-200">KEMBALI & COBA LAGI</button>
         </div>
 
         <!-- Layar Komik -->
@@ -103,8 +100,12 @@
     </div>
 
     <script>
-        // Key tetap tersimpan di variabel agar aplikasi bisa berjalan tanpa input user
-        let currentApiKey = "AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY";
+        // API Key terkunci di sini secara permanen dalam kode JavaScript
+        const CONFIG = {
+            API_KEY: "AIzaSyAgjm5PCmKOQN54ZWiXxPsVKyQMDDncUTY",
+            TOTAL_PAGES: 15
+        };
+
         let currentPage = 1;
         let dynamicPageData = [];
         const imageCache = new Map();
@@ -129,13 +130,13 @@
             const char = document.getElementById('input-karakter').value;
             const theme = document.getElementById('input-tema').value;
 
-            const prompt = `Buat cerita anak 15 halaman dalam Bahasa Indonesia. Karakter: ${char}, Tema: ${theme}. 
-            Kirimkan HANYA dalam format JSON array berisi 15 objek. 
+            const prompt = `Buat cerita anak ${CONFIG.TOTAL_PAGES} halaman dalam Bahasa Indonesia. Karakter: ${char}, Tema: ${theme}. 
+            Kirimkan HANYA dalam format JSON array berisi ${CONFIG.TOTAL_PAGES} objek. 
             Setiap objek wajib punya: {"prompt": "visual description in english for AI image generator", "narasi": "teks narasi indonesia", "dialog": "teks dialog indonesia"}. 
             Tanpa teks tambahan.`;
 
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${CONFIG.API_KEY}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -165,7 +166,7 @@
         async function fetchImage(promptText, pageIdx) {
             if (imageCache.has(pageIdx)) return imageCache.get(pageIdx);
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${currentApiKey}`, {
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${CONFIG.API_KEY}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -186,7 +187,7 @@
             const item = dynamicPageData[num-1];
             document.getElementById('narasi-box').innerText = item.narasi || "";
             document.getElementById('dialog-box').innerText = item.dialog ? `"${item.dialog}"` : "";
-            document.getElementById('pageIndicator').innerText = `HALAMAN ${num} / 15`;
+            document.getElementById('pageIndicator').innerText = `HALAMAN ${num} / ${CONFIG.TOTAL_PAGES}`;
             
             const imgEl = document.getElementById('comic-img');
             const loader = document.getElementById('loader');
@@ -220,7 +221,7 @@
             }
         };
 
-        document.getElementById('next-btn').onclick = () => { if(currentPage < 15) loadPage(currentPage + 1); };
+        document.getElementById('next-btn').onclick = () => { if(currentPage < CONFIG.TOTAL_PAGES) loadPage(currentPage + 1); };
         document.getElementById('prev-btn').onclick = () => { if(currentPage > 1) loadPage(currentPage - 1); };
     </script>
 </body>
