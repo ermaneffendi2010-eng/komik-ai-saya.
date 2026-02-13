@@ -149,6 +149,7 @@
     </div>
 
     <script>
+        // API Key ditangani secara internal oleh sistem Canvas
         const apiKey = ""; 
         const APP_CONFIG = {
             PAGES: 15
@@ -185,6 +186,10 @@
             styleContainer.appendChild(label);
         });
 
+        /**
+         * Mengambil gambar dari API dengan logika percobaan ulang (retry) otomatis.
+         * Hanya model gemini-2.5-flash-image-preview yang didukung untuk fungsi ini.
+         */
         async function fetchImageWithRetry(prompt, retries = 5) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
             const payload = {
@@ -214,12 +219,16 @@
                     throw new Error("Gambar tidak ditemukan dalam respon.");
                 } catch (err) {
                     if (i === retries - 1) throw err;
+                    // Exponential backoff
                     const wait = Math.pow(2, i) * 1000;
                     await new Promise(r => setTimeout(r, wait));
                 }
             }
         }
 
+        /**
+         * Menghasilkan teks cerita lengkap (15 adegan) menggunakan AI.
+         */
         async function generateFullStory() {
             const char = document.getElementById('char-name').value || "Seorang Pahlawan";
             const theme = document.getElementById('story-theme').value || "Petualangan seru";
@@ -254,6 +263,9 @@
             }
         }
 
+        /**
+         * Menampilkan halaman komik berdasarkan indeks.
+         */
         async function drawPage(idx) {
             if (!storyData[idx]) return;
 
@@ -272,6 +284,7 @@
             loader.classList.remove('hidden');
             loaderText.innerText = "Menggambar Adegan...";
 
+            // Cek Cache
             if (cache.has(idx)) {
                 imgElement.src = cache.get(idx);
                 imgElement.onload = () => {
@@ -299,6 +312,7 @@
             }
         }
 
+        // Event Listeners
         document.getElementById('generate-trigger').onclick = async () => {
             const char = document.getElementById('char-name').value.trim();
             const theme = document.getElementById('story-theme').value.trim();
