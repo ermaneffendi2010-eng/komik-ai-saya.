@@ -5,231 +5,447 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Komik Epik - Erman Effendi</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Bangers&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Bangers&display=swap');
         
-        body { font-family: 'Quicksand', sans-serif; background-color: #fef9c3; overflow-x: hidden; }
-        .comic-font { font-family: 'Bangers', cursive; letter-spacing: 1px; }
-        .comic-frame { border: 6px solid #000; box-shadow: 10px 10px 0px #fbbf24; background: #fff; position: relative; }
-        .image-container { width: 100%; aspect-ratio: 1/1; background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        :root {
+            --bg-soft: #fdfbf7; 
+            --accent: #f97316;
+            --sage: #6b8e6b;
+        }
+
+        body { 
+            font-family: 'Quicksand', sans-serif; 
+            background-color: #fff9e6;
+            margin: 0; padding: 0;
+            color: #2d3748;
+        }
         
+        .comic-font { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+        
+        .app-header { text-align: center; padding: 1.5rem 1rem; }
+        .app-title { font-size: 3rem; color: var(--accent); line-height: 1; margin-bottom: 0.5rem; }
+        .app-subtitle { font-weight: 800; color: #1a202c; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .app-motto { font-style: italic; color: var(--accent); font-size: 0.8rem; }
+
+        .setup-box {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #fee2e2;
+            padding: 1.5rem;
+        }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+        .style-item {
+            border: 2px solid #f1f5f9;
+            border-radius: 1.25rem;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .style-item.active {
+            border-color: var(--accent);
+            background-color: #fff7ed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+        }
+
+        .custom-input {
+            width: 100%; padding: 1rem; border-radius: 1.25rem;
+            border: 2px solid #f1f5f9; outline: none; transition: all 0.2s; font-weight: 600;
+        }
+        .custom-input:focus { border-color: var(--accent); background: #fffcf9; }
+
+        .species-btn {
+            flex: 1; padding: 1rem; border-radius: 1.25rem;
+            border: 2px solid #f1f5f9; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
+        }
+        .species-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .image-viewer {
+            width: 100%; aspect-ratio: 1/1; background: #f8fafc;
+            border-radius: 2.5rem; overflow: hidden;
+            border: 5px solid #1a202c; position: relative;
+            box-shadow: 0 20px 50px -15px rgba(0,0,0,0.2);
+        }
+
+        .img-layer {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; transition: opacity 0.5s ease-in-out;
+        }
+
         .loading-spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #f97316;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 0.8s linear infinite;
+            border: 4px solid #f1f5f9; border-top: 4px solid var(--accent);
+            border-radius: 50%; width: 45px; height: 45px;
+            animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .ai-loading-overlay {
-            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.98);
-            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
+        .progress-bar-container {
+            height: 10px; width: 100%; background: #e2e8f0; border-radius: 20px;
+            overflow: hidden; border: 2px solid #1a202c;
         }
-        
-        #custom-alert {
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 200; background: #ef4444; color: white; padding: 1rem 2rem; border-radius: 1rem;
-            font-weight: bold; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #4ade80, #22c55e);
+            width: 0%; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .style-grid::-webkit-scrollbar { width: 4px; }
+        .style-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* API Modal Style */
+        .api-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(10px); z-index: 500;
+            display: flex; items-center justify-center; p: 6;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div id="custom-alert"></div>
-    <div class="max-w-xl mx-auto">
+<body class="min-h-screen p-4 md:p-10">
+
+    <!-- API KEY MODAL (Hanya muncul jika apiKey kosong) -->
+    <div id="api-modal" class="api-overlay hidden">
+        <div class="bg-white max-w-md w-full p-8 rounded-[2.5rem] shadow-2xl text-center space-y-6 border-4 border-orange-100">
+            <div class="w-20 h-20 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto">
+                <i class="fas fa-key text-3xl"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-bold text-gray-800 comic-font uppercase">Aktivasi Studio</h2>
+                <p class="text-sm text-gray-500 font-medium">Masukkan API Key Gemini Anda untuk mulai melukis komik ajaib.</p>
+            </div>
+            <input type="password" id="api-key-input" placeholder="Masukkan Kunci API Anda..." class="custom-input text-center">
+            <button onclick="saveKey()" class="w-full bg-[#f97316] text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition uppercase tracking-widest">
+                AKTIFKAN STUDIO 🚀
+            </button>
+            <p class="text-[10px] text-gray-400">Kunci ini hanya disimpan di browser Anda dan tidak akan dikirim ke mana pun selain Google AI.</p>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
         
-        <!-- Layar Pengaturan -->
-        <div id="setup-screen" class="bg-white p-8 rounded-[2rem] border-8 border-yellow-400 shadow-2xl">
-            <h1 class="text-4xl font-bold text-orange-600 mb-1 text-center comic-font uppercase">Studio Komik Epik</h1>
-            <p class="text-center text-sm font-black text-gray-800 uppercase mb-6">Oleh: Erman Effendi</p>
-            
-            <div class="space-y-4">
-                <div class="bg-orange-50 p-4 rounded-2xl border-2 border-orange-200">
-                    <label class="block text-orange-800 font-bold mb-1 text-sm">🔑 Masukkan API Key Gemini:</label>
-                    <input type="password" id="api-key-input" placeholder="gen-lang-client-0233452259" class="w-full p-3 rounded-xl border-2 border-orange-200 outline-none focus:border-orange-500 text-gray-800">
-                    <p class="text-[10px] text-orange-400 mt-1 italic">*Pastikan tidak ada spasi di awal atau akhir key.</p>
+        <!-- SETUP SCREEN -->
+        <div id="setup-screen" class="animate-in fade-in zoom-in duration-500">
+            <header class="app-header">
+                <h1 class="app-title comic-font">STUDIO KOMIK EPIK</h1>
+                <p class="app-subtitle">OLEH: ERMAN EFFENDI</p>
+                <p class="app-motto">"Belajar Sendiri - Bangkit Sendiri"</p>
+            </header>
+
+            <div class="setup-box space-y-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">1. Pilih Jenis Karakter</label>
+                    <div class="flex gap-4">
+                        <button onclick="setSpecies('human')" id="btn-human" class="species-btn active">
+                            <i class="fas fa-user-astronaut text-lg"></i> Manusia
+                        </button>
+                        <button onclick="setSpecies('animal')" id="btn-animal" class="species-btn">
+                            <i class="fas fa-paw text-lg"></i> Hewan
+                        </button>
+                    </div>
                 </div>
 
-                <input type="text" id="input-karakter" placeholder="Nama Karakter (Misal: Si Kancil)" class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg">
-                <input type="text" id="input-tema" placeholder="Tema Cerita (Misal: Belajar Berbagi)" class="w-full p-4 rounded-xl border-4 border-orange-100 outline-none text-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">2. Siapa Nama Karaktermu?</label>
+                        <input type="text" id="input-karakter" placeholder="Contoh: Kiko si Katak" class="custom-input">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">3. Apa Tema Petualangannya?</label>
+                        <input type="text" id="input-tema" placeholder="Contoh: Menjelajah Luar Angkasa" class="custom-input">
+                    </div>
+                </div>
 
-                <button id="btn-generate" class="w-full bg-orange-500 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-orange-600 text-2xl comic-font uppercase transition-all active:scale-95">
-                    BUAT KOMIK SEKARANG! 🚀
+                <div class="space-y-2">
+                    <label class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">4. Pilih Gaya Gambar Favorit</label>
+                    <div id="style-grid" class="style-grid"></div>
+                </div>
+
+                <button onclick="startGeneration()" class="w-full bg-[#f97316] hover:bg-[#ea580c] text-white py-6 rounded-2xl text-2xl font-bold shadow-xl transition-all active:scale-95 flex items-center justify-center gap-4">
+                    <span class="comic-font uppercase tracking-widest">MULAI PETUALANGAN! 🚀</span>
                 </button>
             </div>
         </div>
 
-        <!-- Layar Loading AI -->
-        <div id="ai-loading" class="ai-loading-overlay hidden">
-            <div class="loading-spinner mb-4"></div>
-            <h2 id="ai-status-text" class="text-2xl font-bold text-orange-600 comic-font uppercase text-center">AI Sedang Merancang Plot...</h2>
-            <p id="ai-status-subtext" class="text-gray-600 font-bold text-center">Menyusun 15 adegan unik untukmu...</p>
-            <button id="retry-btn" class="mt-8 bg-orange-100 px-8 py-3 rounded-full font-bold text-orange-600 hidden border-2 border-orange-200">KEMBALI & PERBAIKI KEY</button>
+        <!-- LOADING SCREEN -->
+        <div id="loading-screen" class="hidden setup-box text-center py-24 space-y-10">
+            <div class="flex justify-center"><div class="loading-spinner"></div></div>
+            <div class="space-y-3">
+                <h2 id="status-text" class="text-3xl font-bold text-[#f97316] comic-font uppercase tracking-widest italic">AI Sedang Berimajinasi...</h2>
+                <p id="substatus-text" class="text-gray-400 font-bold uppercase text-xs tracking-widest">Karakter sedang dikunci agar tidak berubah!</p>
+            </div>
         </div>
 
-        <!-- Layar Komik -->
-        <div id="story-screen" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-black text-white p-3 rounded-2xl">
-                <button id="prev-btn" class="font-bold px-4 text-sm hover:text-yellow-400">⬅️ BALIK</button>
-                <span id="pageIndicator" class="comic-font text-yellow-400">HALAMAN 1 / 15</span>
-                <button id="next-btn" class="font-bold px-4 text-sm hover:text-yellow-400">LANJUT ➡️</button>
+        <!-- COMIC VIEWER -->
+        <div id="comic-viewer" class="hidden space-y-6 max-w-2xl mx-auto">
+            <div class="flex flex-col space-y-2 px-2">
+                <div class="flex justify-between items-center text-[10px] font-black uppercase text-slate-400">
+                    <span id="style-indicator">Gaya: Pixar</span>
+                    <span id="ready-count" class="bg-slate-200 px-3 py-1 rounded-full text-slate-600">0 / 15 Siap</span>
+                </div>
+                <div class="progress-bar-container"><div id="progress-fill" class="progress-fill"></div></div>
             </div>
 
-            <div class="comic-frame rounded-[2.5rem] overflow-hidden">
-                <div class="image-container">
-                    <div id="loader" class="hidden absolute z-30 flex flex-col items-center bg-white/90 p-4 rounded-2xl border-2 border-orange-500 shadow-xl">
-                        <div class="loading-spinner mb-2"></div>
-                        <p class="text-xs font-bold text-orange-600">Lagi Gambar...</p>
-                    </div>
-                    <img id="comic-img" src="" class="w-full h-full object-cover transition-opacity duration-500">
+            <div class="image-viewer shadow-2xl">
+                <div id="image-loader" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/95">
+                    <div class="loading-spinner mb-4"></div>
+                    <p class="text-xs font-black uppercase tracking-widest text-[#f97316] animate-pulse text-center">Melukis Keajaiban<br>Tunggu Sebentar...</p>
                 </div>
-                <div class="bg-white p-6 border-t-4 border-black text-center min-h-[140px] flex flex-col justify-center">
-                    <p id="narasi-box" class="text-lg font-bold text-gray-800 leading-snug"></p>
-                    <p id="dialog-box" class="text-orange-600 italic mt-2 font-bold text-base"></p>
+                <img id="comic-image" src="" class="img-layer opacity-0">
+            </div>
+
+            <div class="bg-white p-8 rounded-[2.5rem] text-center border-4 border-slate-50 shadow-inner min-h-[180px] flex flex-col justify-center">
+                <p id="narration-text" class="text-xl md:text-2xl font-bold text-slate-800 leading-tight"></p>
+                <p id="dialogue-text" class="text-[#f97316] font-black italic mt-5 text-lg border-t pt-4 border-orange-50"></p>
+            </div>
+
+            <div class="flex items-center justify-between gap-5">
+                <button onclick="changePage(-1)" class="flex-1 bg-white border-2 border-slate-200 p-5 rounded-2xl font-bold text-slate-500 active:scale-90 transition shadow-sm">KEMBALI</button>
+                <div class="bg-slate-900 text-white px-8 py-5 rounded-2xl font-black text-xl comic-font">
+                    <span id="page-label">1 / 15</span>
                 </div>
+                <button onclick="changePage(1)" class="flex-1 bg-[#f97316] text-white p-5 rounded-2xl font-bold active:scale-90 shadow-lg border-b-4 border-orange-700">LANJUT</button>
             </div>
             
-            <button onclick="location.reload()" class="w-full text-gray-500 text-sm font-bold uppercase tracking-widest mt-4">Tutup & Buat Baru 🔄</button>
+            <button onclick="location.reload()" class="w-full text-slate-300 hover:text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em] py-4 transition">
+                Tutup Cerita & Buat Baru 🔄
+            </button>
         </div>
     </div>
 
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[200] hidden flex items-center justify-center p-6">
+        <div class="bg-white max-w-sm w-full p-10 rounded-[3rem] text-center space-y-6 shadow-2xl border-4 border-orange-100">
+            <div class="text-5xl">🥺</div>
+            <h3 class="text-2xl font-bold text-gray-800 comic-font uppercase tracking-wide">AI Sedang Istirahat</h3>
+            <p id="error-message" class="text-sm text-slate-400 font-medium"></p>
+            <button onclick="location.reload()" class="w-full bg-[#f97316] text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition">COBA LAGI YA</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl font-bold text-xs translate-y-32 transition-transform duration-500 z-[100]">
+        Pesan Berhasil
+    </div>
+
     <script>
-        let currentApiKey = "";
-        let currentPage = 1;
-        let dynamicPageData = [];
-        const imageCache = new Map();
+        let apiKey = ""; // Akan diisi via modal jika kosong
+        let storyData = [];
+        let currentPage = 0;
+        let imageCache = {};
+        let selectedSpecies = "human";
+        let selectedStylePrompt = "";
+        let characterBible = "";
+        let isFetchingPriority = false;
 
-        function showAlert(msg) {
-            const alertBox = document.getElementById('custom-alert');
-            alertBox.innerText = msg;
-            alertBox.style.display = 'block';
-            setTimeout(() => alertBox.style.display = 'none', 5000);
-        }
+        const availableStyles = [
+            { id: "pixar", name: "3D Pixar", emoji: "🎬", prompt: "Beautiful 3D Disney Pixar movie style, cinematic lighting, ultra-detailed textures, masterpiece" },
+            { id: "chibi", name: "Gaya Chibi", emoji: "💖", prompt: "Chibi style, big adorable eyes, small bodies, cute aesthetic, soft pastel colors" },
+            { id: "anime", name: "Anime Ceria", emoji: "✨", prompt: "Vibrant modern anime illustration, expressive emotional faces, high-end digital art" },
+            { id: "cartoon", name: "Kartun Lucu", emoji: "🐥", prompt: "Cute 2D cartoon, bold clean lines, bright flat colors, whimsical design" },
+            { id: "voxel", name: "Dunia Balok", emoji: "🧱", prompt: "Voxel art, 3D Minecraft style blocks, colorful pixelated 3D world" },
+            { id: "diorama", name: "Diorama Kertas", emoji: "✂️", prompt: "Handcrafted papercraft diorama, 3D paper cutout layers, realistic textures" },
+            { id: "knitted", name: "Seni Rajut", emoji: "🧶", prompt: "Handmade knitted yarn toy, wool texture, soft plushy appearance" },
+            { id: "storybook", name: "Buku Dongeng", emoji: "📖", prompt: "Classic watercolor storybook illustration, soft dreamy lighting, textured paper" },
+            { id: "sketch", name: "Sketsa Pensil", emoji: "✏️", prompt: "Artist colored pencil drawing, expressive hand-drawn lines, paper texture" },
+            { id: "retro", name: "Gaya Retro", emoji: "📺", prompt: "90s classic cartoon style, grainy nostalgic feel, retro color palette" }
+        ];
 
-        async function generateStory() {
-            const loading = document.getElementById('ai-loading');
-            const statusT = document.getElementById('ai-status-text');
-            const statusS = document.getElementById('ai-status-subtext');
-            const retryB = document.getElementById('retry-btn');
-            
-            loading.classList.remove('hidden');
-            retryB.classList.add('hidden');
-            statusT.innerText = "AI Sedang Merancang Plot...";
-
-            const char = document.getElementById('input-karakter').value;
-            const theme = document.getElementById('input-tema').value;
-
-            const prompt = `Buat cerita anak 15 halaman dalam Bahasa Indonesia. Karakter: ${char}, Tema: ${theme}. 
-            Kirimkan HANYA dalam format JSON array berisi 15 objek. 
-            Setiap objek wajib punya: {"prompt": "visual description in english for AI image generator", "narasi": "teks narasi indonesia", "dialog": "teks dialog indonesia"}. 
-            Jangan berikan teks pembuka atau penutup, hanya JSON murni.`;
-
-            try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-
-                if (!resp.ok) {
-                    const errData = await resp.json();
-                    throw new Error(errData.error?.message || "Koneksi API gagal.");
-                }
-
-                const data = await resp.json();
-                let rawText = data.candidates[0].content.parts[0].text;
-                
-                // Membersihkan karakter markdown jika ada
-                rawText = rawText.replace(/```json|```/g, "").trim();
-                
-                dynamicPageData = JSON.parse(rawText);
-                
-                if (dynamicPageData.length === 0) throw new Error("Data kosong.");
-                
-                loading.classList.add('hidden');
-                return true;
-            } catch (e) {
-                console.error(e);
-                statusT.innerText = "Gagal Terhubung!";
-                statusS.innerText = "Error: " + e.message + ". Pastikan API Key benar dan memiliki kuota.";
-                retryB.classList.remove('hidden');
-                retryB.onclick = () => loading.classList.add('hidden');
-                return false;
-            }
-        }
-
-        async function fetchImage(promptText, pageIdx) {
-            if (imageCache.has(pageIdx)) return imageCache.get(pageIdx);
-            try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${currentApiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        instances: { prompt: "Cute 3D Pixar style cartoon illustration, bright colors, friendly atmosphere, " + promptText },
-                        parameters: { sampleCount: 1 }
-                    })
-                });
-                
-                if (!resp.ok) return null;
-                
-                const result = await resp.json();
-                if (!result.predictions || result.predictions.length === 0) return null;
-                
-                const b64 = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                imageCache.set(pageIdx, b64);
-                return b64;
-            } catch (e) { return null; }
-        }
-
-        async function loadPage(num) {
-            currentPage = num;
-            const item = dynamicPageData[num-1];
-            document.getElementById('narasi-box').innerText = item.narasi || "Memuat narasi...";
-            document.getElementById('dialog-box').innerText = item.dialog ? `"${item.dialog}"` : "";
-            document.getElementById('pageIndicator').innerText = `HALAMAN ${num} / 15`;
-            
-            const imgEl = document.getElementById('comic-img');
-            const loader = document.getElementById('loader');
-            
-            if (imageCache.has(num)) {
-                imgEl.src = imageCache.get(num);
-                imgEl.style.opacity = "1";
-                loader.classList.add('hidden');
-            } else {
-                loader.classList.remove('hidden');
-                imgEl.style.opacity = "0.2";
-                const img = await fetchImage(item.prompt, num);
-                if (img && currentPage === num) {
-                    imgEl.src = img;
-                    imgEl.style.opacity = "1";
-                    loader.classList.add('hidden');
-                } else if (!img) {
-                    // Fallback jika gambar gagal
-                    imgEl.src = "https://via.placeholder.com/512?text=Gagal+Memuat+Gambar";
-                    loader.classList.add('hidden');
-                }
-            }
-        }
-
-        document.getElementById('btn-generate').onclick = async () => {
-            // Trim API Key untuk menghapus spasi yang tak sengaja tercopy
-            currentApiKey = document.getElementById('api-key-input').value.trim();
-            const char = document.getElementById('input-karakter').value.trim();
-            const theme = document.getElementById('input-tema').value.trim();
-
-            if (!currentApiKey) return showAlert("⚠️ Masukkan API Key Gemini dulu!");
-            if (!char || !theme) return showAlert("⚠️ Nama karakter dan tema harus diisi!");
-
-            if (await generateStory()) {
-                document.getElementById('setup-screen').classList.add('hidden');
-                document.getElementById('story-screen').classList.remove('hidden');
-                loadPage(1);
+        // Jalankan saat load
+        window.onload = function() {
+            // Periksa apakah berjalan di Canvas (otomatis ada key) atau mandiri
+            if (apiKey === "") {
+                document.getElementById('api-modal').style.display = 'flex';
             }
         };
 
-        document.getElementById('next-btn').onclick = () => { if(currentPage < 15) loadPage(currentPage + 1); };
-        document.getElementById('prev-btn').onclick = () => { if(currentPage > 1) loadPage(currentPage - 1); };
+        function saveKey() {
+            const val = document.getElementById('api-key-input').value.trim();
+            if (val) {
+                apiKey = val;
+                document.getElementById('api-modal').style.display = 'none';
+                showToast("STUDIO DIAKTIFKAN!");
+            }
+        }
+
+        const grid = document.getElementById('style-grid');
+        availableStyles.forEach((s, i) => {
+            const d = document.createElement('div');
+            d.className = `style-item ${i===0?'active':''}`;
+            d.innerHTML = `<div class="text-3xl mb-1">${s.emoji}</div><div class="text-[10px] font-black uppercase tracking-tighter">${s.name}</div>`;
+            d.onclick = () => {
+                document.querySelectorAll('.style-item').forEach(el=>el.classList.remove('active'));
+                d.classList.add('active');
+                selectedStylePrompt = s.prompt;
+                document.getElementById('style-indicator').innerText = `Gaya: ${s.name}`;
+            };
+            if(i===0) selectedStylePrompt = s.prompt;
+            grid.appendChild(d);
+        });
+
+        function setSpecies(s) {
+            selectedSpecies = s;
+            document.getElementById('btn-human').classList.toggle('active', s === 'human');
+            document.getElementById('btn-animal').classList.toggle('active', s === 'animal');
+        }
+
+        async function callAI(url, body) {
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const res = await fetch(url + `?key=${apiKey}`, { 
+                        method: 'POST', 
+                        headers: {'Content-Type':'application/json'}, 
+                        body: JSON.stringify(body)
+                    });
+                    const d = await res.json();
+                    if (res.ok) return d;
+                    if (res.status !== 429) throw new Error(d.error?.message || "Kesalahan API");
+                } catch (e) {
+                    if (i === 4) throw e;
+                }
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+            }
+        }
+
+        async function startGeneration() {
+            const name = document.getElementById('input-karakter').value.trim();
+            const theme = document.getElementById('input-tema').value.trim();
+            if (!name || !theme) return;
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                // 1. CHARACTER ANCHOR
+                document.getElementById('status-text').innerText = "Mengunci Karakter...";
+                const biblePrompt = `Define a character named "${name}". 
+                Type: ${selectedSpecies === 'animal' ? 'STRICTLY ANIMAL (NO HUMAN FEATURES)' : 'HUMAN'}. 
+                Describe their species, colors, hair, and specific iconic outfit in detail for 15-page consistency.`;
+
+                const bibleRes = await callAI(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent`, {
+                    contents: [{ role: "user", parts: [{ text: biblePrompt }] }]
+                });
+                characterBible = bibleRes.candidates[0].content.parts[0].text;
+
+                // 2. STORY GENERATION
+                document.getElementById('status-text').innerText = "Merancang Cerita...";
+                const plotPrompt = `Create a 15-page children's comic in Indonesian. 
+                Character: ${name}. Species/Look: ${characterBible}. Theme: ${theme}. 
+                STRICT RULE: Character species must NOT change. 
+                Output JSON: {"pages": [{"visual": "Literal English scene description matching the narration", "narasi": "Indonesian", "dialog": "Indonesian"}]}.`;
+
+                const plotData = await callAI(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent`, {
+                    contents: [{ role: "user", parts: [{ text: plotPrompt }] }],
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+
+                storyData = JSON.parse(plotData.candidates[0].content.parts[0].text).pages;
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('comic-viewer').classList.remove('hidden');
+                
+                renderPage(0);
+                startParallelQueue(); 
+
+            } catch (err) {
+                document.getElementById('error-message').innerText = err.message;
+                document.getElementById('error-modal').classList.remove('hidden');
+            }
+        }
+
+        async function startParallelQueue() {
+            for (let i = 0; i < storyData.length; i += 2) {
+                const batch = [];
+                for (let j = 0; j < 2 && (i + j) < storyData.length; j++) {
+                    batch.push(loadPageImage(i + j));
+                }
+                await Promise.all(batch);
+                if (isFetchingPriority) await new Promise(r => setTimeout(r, 500)); 
+            }
+        }
+
+        async function loadPageImage(index) {
+            if (imageCache[index]) return imageCache[index];
+            try {
+                const restriction = selectedSpecies === 'animal' ? "STRICTLY NO HUMANS, NO PEOPLE, NO MAN, NO WOMAN, ONLY THE ANIMAL, " : "";
+                const finalPrompt = `${selectedStylePrompt}. SCENE: ${storyData[index].visual}. CHARACTER: ${characterBible}. ${restriction} CLEAN ART, NO TEXT, NO LABELS.`;
+
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ instances: { prompt: finalPrompt }, parameters: { sampleCount: 1 } })
+                });
+                const d = await res.json();
+                
+                if (d.predictions?.[0]) {
+                    const b64 = `data:image/png;base64,${d.predictions[0].bytesBase64Encoded}`;
+                    imageCache[index] = b64;
+                    updateUIProgress();
+                    
+                    if (currentPage === index) {
+                        const img = document.getElementById('comic-image');
+                        img.src = b64;
+                        img.style.opacity = "1";
+                        document.getElementById('image-loader').classList.add('hidden');
+                    }
+                    return b64;
+                }
+            } catch (e) { 
+                return null;
+            }
+        }
+
+        function updateUIProgress() {
+            const count = Object.keys(imageCache).length;
+            document.getElementById('ready-count').innerText = `${count} / 15 Siap`;
+            document.getElementById('progress-fill').style.width = `${(count/15)*100}%`;
+        }
+
+        async function renderPage(index) {
+            currentPage = index;
+            const page = storyData[index];
+            const img = document.getElementById('comic-image');
+            const loader = document.getElementById('image-loader');
+
+            document.getElementById('page-label').innerText = `${index + 1} / 15`;
+            document.getElementById('narration-text').innerText = page.narasi;
+            document.getElementById('dialogue-text').innerText = page.dialog ? `"${page.dialog}"` : "";
+
+            if (imageCache[index]) {
+                img.src = imageCache[index];
+                img.style.opacity = "1";
+                loader.classList.add('hidden');
+            } else {
+                img.style.opacity = "0";
+                loader.classList.remove('hidden');
+                isFetchingPriority = true;
+                await loadPageImage(index);
+                isFetchingPriority = false;
+            }
+        }
+
+        function changePage(dir) {
+            const next = currentPage + dir;
+            if (next >= 0 && next < storyData.length) renderPage(next);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('translate-y-32');
+            setTimeout(() => t.classList.add('translate-y-32'), 3000);
+        }
     </script>
 </body>
 </html>
